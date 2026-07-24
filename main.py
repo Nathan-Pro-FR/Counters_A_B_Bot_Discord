@@ -2,6 +2,20 @@ import os
 import asyncio
 import discord
 from discord.ext import commands
+from aiohttp import web  # Permet de garder le Web Service Render actif gratuitement
+
+# Mini-serveur Web pour satisfaire le plan gratuit de Render
+async def handle(request):
+    return web.Response(text="Les bots comptent en arrière-plan !")
+
+async def run_dummy_server():
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.getenv("PORT", 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
 
 # ---------------------------------------------------------
 # CONFIGURATION DES INTENTS
@@ -86,9 +100,12 @@ async def main():
     token_b = os.getenv("TOKEN_BOT_B")
 
     if not token_a or not token_b:
-        print("❌ Erreur : L'une des variables d'environnement (TOKEN_BOT_A ou TOKEN_BOT_B) est manquante !")
+        print("❌ Erreur : Tokens manquants !")
         return
-    
+
+    # Lancer le mini-serveur web ET les deux bots ensemble
+    await run_dummy_server()
+
     async with bot_a, bot_b:
         await asyncio.gather(
             bot_a.start(token_a),
